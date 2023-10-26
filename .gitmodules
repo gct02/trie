@@ -1,0 +1,3 @@
+[submodule "dependencies/HashTable"]
+	path = dependencies/HashTable
+	url = https://github.com/gabrielc-tavares/HashTable.git

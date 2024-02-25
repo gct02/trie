@@ -4,74 +4,138 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "./HashTable/hash_table.hpp"
+
+#include "hash-table/hash-table.hpp"
 
 template<typename T>
-class TrieNode {
+class TrieNode 
+{
+private:
+	// Alias declarations
+	using NodePtr = std::shared_ptr<TrieNode<T>>;
+
 public:
-	ht::HashTable<char, std::shared_ptr<TrieNode<T>>> children;
+	TrieNode() 
+	{
+	}
+
+	TrieNode(const HashTable<char, NodePtr>& children, std::vector<T> data)
+		: children(children), data(data)
+	{
+	}
+
+	TrieNode(const HashTable<char, NodePtr>& children)
+		: children(children)
+	{
+	}
+
+	std::vector<T> getData() const 
+	{
+		return data;
+	}
+
+	HashTable<char, NodePtr> getChildren() const 
+	{
+		return children;
+	}
+
+	void setData(const std::vector<T>& data) 
+	{
+		this->data.clear();
+		this->data = data;
+	}
+
+	void insertData(const T& data) {
+		this->data.emplace_back(data);
+	}
+
+	void insertChildren(char key, NodePtr childNodePtr) {
+		this->children[key] = childNodePtr;
+	}
+
+private:
+	HashTable<char, NodePtr> children;
 	std::vector<T> data;
 };
 
 template<typename T>
-class Trie {
-public:
+class Trie
+{
+private:
+	// Alias declarations
 	using Node = TrieNode<T>;
 	using NodePtr = std::shared_ptr<Node>;
 
-	// Trie() : root(new Node()) {}
-	Trie() : root(std::make_shared<Node>(Node())) {}
+	using string = std::string;
 
-	// Insert "word" in Trie and map "data" with it
-	void insert(const std::string& word, const T& data) {
-		size_t word_len = word.length(), i = 0;
-		NodePtr crawl = root;
+public:
+	Trie() 
+		: root(std::make_shared<Node>(Node())) 
+	{
+	}
 
-		while (i < word_len) {
-			std::optional<NodePtr> next_lvl = crawl->children.getValue(word[i]);
-			if (next_lvl.has_value()) {
-				crawl = next_lvl.value();
+	// Insert "word" in trie and map "data" with it
+	void insert(const string& word, const T& data) 
+	{
+		size_t wordLen = word.length(), i = 0;
+		NodePtr pCrawl = root;
+
+		while (i < wordLen) {
+
+			HashTable<char, NodePtr> childNodes = pCrawl->getChildren();
+			std::optional<NodePtr> nextLevelPtr = childNodes.getValue(word[i]);
+
+			if (nextLevelPtr.has_value()) {
+				pCrawl = nextLevelPtr.value();
 				i++;
-			} else {
+			} 
+			else {
 				do {
-					crawl->children.insert(word[i], std::make_shared<Node>(Node()));
-					crawl = crawl->children.getValue(word[i]).value();
+					pCrawl->insertChildren(word[i], std::make_shared<Node>(Node()));
+					pCrawl = pCrawl->getChildren().getValue(word[i]).value();
 					i++;
-				} while (i < word_len);
+				} 
+				while (i < wordLen);
 				break;
 			}
 		}
-		crawl->data.emplace_back(data);
+		pCrawl->insertData(data);
 	}
 
-	// Returns a vector with all the data that was mapped with words prefixed by "prefix"
-	std::vector<T> search(const std::string& prefix) {
-		size_t prefix_len = prefix.length();
+	// Returns a vector with all the data that was mapped with words 
+	// prefixed by "prefix"
+	std::vector<T> search(const string& prefix) 
+	{
+		size_t prefixLen = prefix.length();
 		std::vector<T> result;
-		NodePtr crawl = root;
+		NodePtr pCrawl = root;
 
-		for (int i = 0; i < prefix_len; i++) {
-			std::optional<NodePtr> next_lvl = crawl->children.getValue(prefix[i]);
+		for (int i = 0; i < prefixLen; i++) {
+			HashTable<char, NodePtr> childNodes = pCrawl->getChildren();
+			std::optional<NodePtr> nextLevelPtr = childNodes.getValue(prefix[i]);
 
-			if (next_lvl.has_value()) {
-				crawl = next_lvl.value();
-			} else {
-				std::cout << "No words prefixed with \"" << prefix << "\" were found\n";
+			if (nextLevelPtr.has_value()) {
+				pCrawl = nextLevelPtr.value();
+			} 
+			else {
+				std::cout << "No words prefixed with \"" << prefix << "\" were found.\n";
 				return result;
 			}
 		}
-		collect(crawl, result);
+		collect(pCrawl, result);
 		return result;
 	}
 
 private:
 	NodePtr root;
 
-	void collect(NodePtr crawl, std::vector<T>& result) {
-		if (!crawl->data.empty()) {
-			result.insert(std::end(result), std::begin(crawl->data), std::end(crawl->data));
+	void collect(NodePtr pCrawl, std::vector<T>& result) {
+		std::vector<T> data = pCrawl->getData();
+		if (!data.empty()) {
+			result.insert(std::end(result), std::begin(data), std::end(data));
 		}
-		std::vector<NodePtr> children = crawl->children.getAll();
+
+		std::vector<NodePtr> children = pCrawl->getChildren().getValues();
 		for (NodePtr n : children) {
 			collect(n, result);
 		}

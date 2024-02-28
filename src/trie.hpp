@@ -8,119 +8,64 @@
 #include "hash-table/hash-table.hpp"
 
 template<typename T>
-class TrieNode 
-{
+class Trie {
 private:
+	class Node {
+	public:
+		HashTable<char, std::shared_ptr<Node>> children;
+		std::vector<T> data;
+	};
+
 	// Alias declarations
-	using NodePtr = std::shared_ptr<TrieNode<T>>;
-
-public:
-	TrieNode() 
-	{
-	}
-
-	TrieNode(const HashTable<char, NodePtr>& children, std::vector<T> data)
-		: children(children), data(data)
-	{
-	}
-
-	TrieNode(const HashTable<char, NodePtr>& children)
-		: children(children)
-	{
-	}
-
-	std::vector<T> getData() const 
-	{
-		return data;
-	}
-
-	HashTable<char, NodePtr> getChildren() const 
-	{
-		return children;
-	}
-
-	void setData(const std::vector<T>& data) 
-	{
-		this->data.clear();
-		this->data = data;
-	}
-
-	void insertData(const T& data) {
-		this->data.emplace_back(data);
-	}
-
-	void insertChildren(char key, NodePtr childNodePtr) {
-		this->children[key] = childNodePtr;
-	}
-
-private:
-	HashTable<char, NodePtr> children;
-	std::vector<T> data;
-};
-
-template<typename T>
-class Trie
-{
-private:
-	// Alias declarations
-	using Node = TrieNode<T>;
 	using NodePtr = std::shared_ptr<Node>;
-
 	using string = std::string;
 
 public:
 	Trie() 
-		: root(std::make_shared<Node>(Node())) 
-	{
+		: root(std::make_shared<Node>(Node())) {
 	}
 
 	// Insert "word" in trie and map "data" with it
-	void insert(const string& word, const T& data) 
-	{
-		size_t wordLen = word.length(), i = 0;
+	void insert(const string& word, const T& data) {
+		size_t len = word.length(), i = 0;
 		NodePtr pCrawl = root;
 
-		while (i < wordLen) {
+		while (i < len) {
+			HashTable<char, NodePtr> children = pCrawl->children;
+			std::optional<NodePtr> nextPtr = children.getValue(word[i]);
 
-			HashTable<char, NodePtr> childNodes = pCrawl->getChildren();
-			std::optional<NodePtr> nextLevelPtr = childNodes.getValue(word[i]);
-
-			if (nextLevelPtr.has_value()) {
-				pCrawl = nextLevelPtr.value();
+			if (nextPtr.has_value()) {
+				pCrawl = nextPtr.value();
 				i++;
 			} 
 			else {
 				do {
-					pCrawl->insertChildren(word[i], std::make_shared<Node>(Node()));
-					pCrawl = pCrawl->getChildren().getValue(word[i]).value();
+					pCrawl->children.insert(word[i], std::make_shared<Node>(Node()));
+					pCrawl = pCrawl->children.getValue(word[i]).value();
 					i++;
-				} 
-				while (i < wordLen);
-				break;
+				}
+				while (i < len);
 			}
 		}
-		pCrawl->insertData(data);
+		pCrawl->data.emplace_back(data);
 	}
 
 	// Returns a vector with all the data that was mapped with words 
 	// prefixed by "prefix"
-	std::vector<T> search(const string& prefix) 
-	{
-		size_t prefixLen = prefix.length();
+	std::vector<T> search(const string& prefix) {
+		size_t len = prefix.length();
 		std::vector<T> result;
 		NodePtr pCrawl = root;
 
-		for (int i = 0; i < prefixLen; i++) {
-			HashTable<char, NodePtr> childNodes = pCrawl->getChildren();
-			std::optional<NodePtr> nextLevelPtr = childNodes.getValue(prefix[i]);
+		for (int i = 0; i < len; i++) {
+			HashTable<char, NodePtr> children = pCrawl->children;
+			std::optional<NodePtr> nextPtr = children.getValue(prefix[i]);
 
-			if (nextLevelPtr.has_value()) {
-				pCrawl = nextLevelPtr.value();
-			} 
-			else {
+			if (!nextPtr.has_value()) {
 				std::cout << "No words prefixed with \"" << prefix << "\" were found.\n";
 				return result;
-			}
+			} 
+			pCrawl = nextPtr.value();
 		}
 		collect(pCrawl, result);
 		return result;
@@ -130,14 +75,16 @@ private:
 	NodePtr root;
 
 	void collect(NodePtr pCrawl, std::vector<T>& result) {
-		std::vector<T> data = pCrawl->getData();
+		std::vector<T> data = pCrawl->data;
+
 		if (!data.empty()) {
 			result.insert(std::end(result), std::begin(data), std::end(data));
 		}
 
-		std::vector<NodePtr> children = pCrawl->getChildren().getValues();
-		for (NodePtr n : children) {
-			collect(n, result);
+		std::vector<NodePtr> children = pCrawl->children.getValues();
+
+		for (NodePtr nodePtr : children) {
+			collect(nodePtr, result);
 		}
 	}
 };

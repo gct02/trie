@@ -71,6 +71,25 @@ public:
 		return result;
 	}
 
+	std::vector<T> remove(const string& prefix) {
+		size_t len = prefix.length();
+		std::vector<T> result;
+		NodePtr pCrawl = root;
+
+		for (int i = 0; i < len; i++) {
+			HashTable<char, NodePtr> children = pCrawl->children;
+			std::optional<NodePtr> nextPtr = children.getValue(prefix[i]);
+
+			if (!nextPtr.has_value()) {
+				std::cout << "No words prefixed with \"" << prefix << "\" were found.\n";
+				return result;
+			}
+			pCrawl = nextPtr.value();
+		}
+		collectAndRemove(pCrawl, result);
+		return result;
+	}
+
 private:
 	NodePtr root;
 
@@ -86,5 +105,22 @@ private:
 		for (NodePtr nodePtr : children) {
 			collect(nodePtr, result);
 		}
+	}
+
+	void collectAndRemove(NodePtr pCrawl, std::vector<T>& result) {
+		std::vector<T> data = pCrawl->data;
+
+		if (!data.empty()) {
+			result.insert(std::end(result), std::begin(data), std::end(data));
+		}
+
+		std::vector<NodePtr> children = pCrawl->children.getValues();
+
+		for (NodePtr nodePtr : children) {
+			collectAndRemove(nodePtr, result);
+		}
+
+		pCrawl->data.clear();
+		pCrawl.reset();
 	}
 };

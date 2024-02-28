@@ -1,3 +1,3 @@
-[submodule "dependencies/HashTable"]
-	path = dependencies/HashTable
-	url = https://github.com/gabrielc-tavares/HashTable.git
+[submodule "dependencies/hash-table"]
+	path = dependencies/hash-table
+	url = https://github.com/gct02/hash-table.git

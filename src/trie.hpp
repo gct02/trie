@@ -8,25 +8,29 @@
 #include "hash-table/hash-table.hpp"
 
 template<typename T>
-class Trie {
+class Trie 
+{
 private:
-	class Node {
+	class Node 
+	{
 	public:
 		HashTable<char, std::shared_ptr<Node>> children;
 		std::vector<T> data;
 	};
 
-	// Alias declarations
+	// Alias declarations.
 	using NodePtr = std::shared_ptr<Node>;
 	using string = std::string;
 
 public:
 	Trie() 
-		: root(std::make_shared<Node>(Node())) {
+		: root(std::make_shared<Node>(Node())) 
+	{
 	}
 
-	// Insert "word" in trie and map "data" with it
-	void insert(const string& word, const T& data) {
+	// Insert "word" in trie and map "data" with it.
+	void insert(const string& word, const T& data) 
+	{
 		size_t len = word.length(), i = 0;
 		NodePtr pCrawl = root;
 
@@ -50,9 +54,10 @@ public:
 		pCrawl->data.emplace_back(data);
 	}
 
-	// Returns a vector with all the data that was mapped with words 
-	// prefixed by "prefix"
-	std::vector<T> search(const string& prefix) {
+	// Returns a vector with the data that was mapped with all of the words 
+	// prefixed by "prefix".
+	std::vector<T> search(const string& prefix) 
+	{
 		size_t len = prefix.length();
 		std::vector<T> result;
 		NodePtr pCrawl = root;
@@ -71,7 +76,10 @@ public:
 		return result;
 	}
 
-	std::vector<T> remove(const string& prefix) {
+	// Remove all of the words prefixed by "prefix" and returns the data that 
+	// was mapped with it.
+	std::vector<T> remove(const string& prefix) 
+	{
 		size_t len = prefix.length();
 		std::vector<T> result;
 		NodePtr pCrawl = root;
@@ -93,32 +101,26 @@ public:
 private:
 	NodePtr root;
 
-	void collect(NodePtr pCrawl, std::vector<T>& result) {
+	void collect(NodePtr pCrawl, std::vector<T>& result) 
+	{
 		std::vector<T> data = pCrawl->data;
-
-		if (!data.empty()) {
+		if (!data.empty()) 
 			result.insert(std::end(result), std::begin(data), std::end(data));
-		}
 
 		std::vector<NodePtr> children = pCrawl->children.getValues();
-
-		for (NodePtr nodePtr : children) {
+		for (NodePtr nodePtr : children) 
 			collect(nodePtr, result);
-		}
 	}
 
-	void collectAndRemove(NodePtr pCrawl, std::vector<T>& result) {
+	void collectAndRemove(NodePtr pCrawl, std::vector<T>& result) 
+	{
 		std::vector<T> data = pCrawl->data;
-
-		if (!data.empty()) {
+		if (!data.empty()) 
 			result.insert(std::end(result), std::begin(data), std::end(data));
-		}
 
 		std::vector<NodePtr> children = pCrawl->children.getValues();
-
-		for (NodePtr nodePtr : children) {
+		for (NodePtr nodePtr : children) 
 			collectAndRemove(nodePtr, result);
-		}
 
 		pCrawl->data.clear();
 		pCrawl.reset();
